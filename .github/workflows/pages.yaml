@@ -30,7 +30,9 @@ jobs:
 
       # Runs a single command using the runners shell
       - name: Run build
-        run: $GITHUB_WORKSPACE/build.sh
+        run: |
+          npx tsc
+          npx @tailwindcss/cli -i ./src/input.css -o ./dist/css/output.css
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v4.0.0
