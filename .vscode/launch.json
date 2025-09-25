@@ -1,0 +1,37 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "2.0.0",
+  "configurations": [
+    {
+      "name": "TypeScript Watch",
+      "type": "node",
+      "request": "launch",
+      "console": "integratedTerminal",
+      "runtimeExecutable": "yarn",
+      "args": ["tsc", "--watch"]
+    },
+    {
+      "name": "TailwindCSS Dev",
+      "type": "node",
+      "request": "launch",
+      "console": "integratedTerminal",
+      "runtimeExecutable": "yarn",
+      "args": [
+        "tailwindcss",
+        "-i",
+        "./src/input.css",
+        "-o",
+        "./dist/output.css",
+        "--watch"
+      ]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "TypeScript + TailwindCSS",
+      "configurations": ["TypeScript Watch", "TailwindCSS Dev"]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+    "version": "2.0.0",
+    "tasks": [{
+        "label": "TypeScript Watch",
+        "command": "npx",
+        "args": ["tsc", "-w"],
+        "type": "shell"
+    },
+    {
+        "label": "TailwindCSS Dev",
+        "command": "npx",
+        "args": ["@tailwindcss/cli", "-i", "./src/input.css", "-o", "./src/output.css", "--watch"],
+        "type": "shell"
+    }],
+}
