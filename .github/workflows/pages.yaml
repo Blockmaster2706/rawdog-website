@@ -38,7 +38,7 @@ jobs:
         uses: actions/upload-pages-artifact@v4.0.0
         with:
           # Path of the directory containing the static assets.
-          path: $GITHUB_WORKSPACE/dist
+          path: /dist
 
       - name: Deploy GitHub Pages site
         uses: actions/deploy-pages@v4.0.5
