@@ -21,9 +21,9 @@
       "args": [
         "tailwindcss",
         "-i",
-        "./src/input.css",
+        "./src/*.css",
         "-o",
-        "./dist/output.css",
+        "./dist/css/*.css",
         "--watch"
       ]
     }
