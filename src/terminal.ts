@@ -194,14 +194,21 @@ function processCatCommand(commandArguments: string[]): void {
   let content = "";
 
   // Check if a filename is provided
-  const filename = commandArguments[1];
+  let filename = commandArguments[1];
   console.log("Arguments:", commandArguments);
-  const commandString = commandArguments.join(" ");
 
   if (!filename) {
     content = "\nError: No filename specified.";
-    updateTerminalFrame(commandString, content);
+    updateTerminalFrame(commandArguments.join(" "), content);
     return;
+  }
+
+  if (!filename.startsWith("~")) {
+    if (filename.startsWith("/")) {
+      filename = getCurrentDirectory() + filename; // Convert absolute path to home-relative
+    } else {
+      filename = getCurrentDirectory() + "/" + filename; // Convert relative path to home-relative
+    }
   }
 
   // Look up the file in our file system
@@ -212,7 +219,7 @@ function processCatCommand(commandArguments: string[]): void {
     content = `\nError: File '${filename}' not found.`;
   }
 
-  updateTerminalFrame(commandString, content);
+  updateTerminalFrame(commandArguments.join(" "), content);
 }
 
 function processLsCommand(commandArguments: string[]): void {
