@@ -36,7 +36,7 @@ jobs:
       - name: Run build
         run: |
           npx tsc
-          npx @tailwindcss/cli -i ./src/input.css -o ./dist/css/output.css
+          npx @tailwindcss/cli -i ./src/input.css -o ./dist/output.css
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v4.0.0
