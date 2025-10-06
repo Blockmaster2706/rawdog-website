@@ -2,11 +2,10 @@
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
     // File Layout
-    "rootDir": "./src",
     "outDir": "./dist/js/",
 
     // Environment Settings - Simple JS output
-    "module": "None",
+    "module": "ES2020",
     "target": "ES2020",
     "lib": ["DOM", "DOM.Iterable", "ES2020"],
 
@@ -20,7 +19,10 @@
 
     // Simple mode - no module complexity
     "moduleDetection": "legacy",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    
+    // Add types for Cypress
+    "types": ["cypress", "node"]
   },
-  "include": ["src"]
+  "include": ["src", "cypress/**/*.ts"]
 }

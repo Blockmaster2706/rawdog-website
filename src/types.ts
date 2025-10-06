@@ -64,7 +64,20 @@ export class CustomFileSystem {
         return false;
     }
 
-
+    public addDirectory(path: string, name: string): boolean {
+        const parentNode = this.getNodeByPath(path);
+        if (parentNode && parentNode.type === 'directory') {
+            const newDir: CustomFileSystemNode = {
+                name,
+                type: 'directory',
+                path: `${parentNode.path}${name}/`,
+                children: []
+            };
+            parentNode.children!.push(newDir);
+            return true;
+        }
+        return false;
+    }
 }
 
 export const fileSystem = new CustomFileSystem();
