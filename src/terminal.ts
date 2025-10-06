@@ -1,3 +1,8 @@
+import { getFileContent } from "./filesystem-commands";
+import { CustomFileSystem } from "./types";
+
+const fileSystem = new CustomFileSystem();
+
 /**
  * This file provides functionality to modify the content of elements with the "commands" class
  */
@@ -132,51 +137,6 @@ function processCommand(commandArguments: string[]): void {
   }
 }
 
-function updateTerminalFrame(command: string, content: string): void {
-  const prevCommand = document.querySelector(".current-command");
-  const terminalFrame = document.querySelector(".terminal-output");
-  const promptLabel = document.querySelector(".prompt");
-
-  if (terminalFrame && prevCommand && promptLabel) {
-    prevCommand.textContent = promptLabel.textContent + " " + command;
-    // Convert newline characters to <br> tags for proper HTML display
-    terminalFrame.innerHTML = content.replace(/\n/g, "<br>");
-  }
-}
-
-// Define a hierarchical file system structure
-const fileSystem = {
-  "~": {
-    test: "This is the content of test file",
-    readme: "Welcome to the terminal simulator!",
-    projects: {
-      test: {
-        "project1.txt": "Details about Project 1",
-        "project2.txt": "Details about Project 2",
-      },
-      "hello.txt": "Hello, world!",
-      "notes.md": "# Notes\n- Remember to update documentation",
-    },
-    docs: {
-      "manual.txt": "User manual for terminal simulator",
-      help: "Detailed help information",
-    },
-  },
-};
-
-// Function to get file content based on path
-function getFileContent(path: string): string | null {
-  const parts = path.replace(/^~\//, "").split("/");
-  let current: any = fileSystem["~"];
-
-  for (const part of parts) {
-    if (!current[part]) return null;
-    current = current[part];
-  }
-
-  return typeof current === "string" ? current : null;
-}
-
 function processHelpCommand(): void {
   const content = `
 Available Commands:
@@ -188,38 +148,6 @@ Available Commands:
 - exit: Exit the terminal
 `;
   updateTerminalFrame("help", content);
-}
-
-function processCatCommand(commandArguments: string[]): void {
-  let content = "";
-
-  // Check if a filename is provided
-  let filename = commandArguments[1];
-  console.log("Arguments:", commandArguments);
-
-  if (!filename) {
-    content = "\nError: No filename specified.";
-    updateTerminalFrame(commandArguments.join(" "), content);
-    return;
-  }
-
-  if (!filename.startsWith("~")) {
-    if (filename.startsWith("/")) {
-      filename = getCurrentDirectory() + filename; // Convert absolute path to home-relative
-    } else {
-      filename = getCurrentDirectory() + "/" + filename; // Convert relative path to home-relative
-    }
-  }
-
-  // Look up the file in our file system
-  const fileContent = getFileContent(filename);
-  if (fileContent !== null) {
-    content = `\n${fileContent}`;
-  } else {
-    content = `\nError: File '${filename}' not found.`;
-  }
-
-  updateTerminalFrame(commandArguments.join(" "), content);
 }
 
 function processLsCommand(commandArguments: string[]): void {
@@ -392,8 +320,4 @@ function processCdCommand(commandArguments: string[]): void {
   updateTerminalFrame(commandArguments.join(" "), content);
 }
 
-function getCurrentDirectory(): string {
-  const currentDir = document.querySelector(".currentDir");
-  if (!currentDir) return "~";
-  return currentDir.textContent || "~";
-}
+
