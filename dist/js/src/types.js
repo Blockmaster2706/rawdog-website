@@ -1,22 +1,27 @@
 export class CustomFileSystem {
     constructor() {
         this.root = {
-            name: '~',
-            type: 'directory',
+            name: "~",
+            type: "directory",
             children: [],
-            path: '/',
+            path: "/",
         };
-        this.currentPath = '/';
+        this.currentPath = "/";
     }
     getNodeByPath(path) {
-        if (path === '/' || path === '~')
+        if (path === "/" || path === "~")
             return this.root;
-        const parts = path.replace(/^~\//, '').split('/').filter(p => p);
-        let currentNode = path.startsWith('~') ? this.root : this.getNodeByPath(this.currentPath) || this.root;
+        const parts = path
+            .replace(/^~\//, "")
+            .split("/")
+            .filter((p) => p);
+        let currentNode = path.startsWith("/")
+            ? this.root
+            : this.getNodeByPath(this.currentPath) || this.root;
         for (const part of parts) {
             if (!currentNode.children)
                 return null;
-            const nextNode = currentNode.children.find(child => child.name === part);
+            const nextNode = currentNode.children.find((child) => child.name === part);
             if (!nextNode)
                 return null;
             currentNode = nextNode;
@@ -25,59 +30,61 @@ export class CustomFileSystem {
     }
     getNodeType(node) {
         if (!node)
-            return 'not found';
+            return "not found";
         return node.type;
     }
     readFile(path) {
         const node = this.getNodeByPath(path);
-        if (node && node.type === 'file') {
-            return node.content || '';
+        if (node && node.type === "file") {
+            return node.content || "";
         }
         return null;
     }
     listDirectory(path) {
         const node = this.getNodeByPath(path);
-        if (node && node.type === 'directory' && node.children) {
+        if (node && node.type === "directory" && node.children) {
             return node.children
                 .sort((a, b) => {
                 if (a.type === b.type)
                     return a.name.localeCompare(b.name);
-                return a.type === 'directory' ? -1 : 1;
+                return a.type === "directory" ? -1 : 1;
             })
-                .map(child => `${child.type === 'directory' ? '📁' : '📄'} ${child.name}`);
+                .map((child) => `${child.type === "directory" ? "📁" : "📄"} ${child.name}`);
         }
         return null;
     }
     changeDirectory(path) {
         const node = this.getNodeByPath(path);
-        if (node && node.type === 'directory') {
-            this.currentPath = path;
+        if (node && node.type === "directory") {
+            this.currentPath = node.path;
             return true;
         }
+        localStorage.setItem("filesystem", JSON.stringify(this));
         return false;
     }
     addDirectory(path, name) {
         const parentNode = this.getNodeByPath(path);
-        if (parentNode && parentNode.type === 'directory') {
+        if (parentNode && parentNode.type === "directory") {
             const newDir = {
                 name,
-                type: 'directory',
+                type: "directory",
                 path: `${parentNode.path}${name}/`,
-                children: []
+                children: [],
             };
             parentNode.children.push(newDir);
             return true;
         }
+        localStorage.setItem("filesystem", JSON.stringify(this));
         return false;
     }
     addFile(path, name, content) {
         const parentNode = this.getNodeByPath(path);
-        if (parentNode && parentNode.type === 'directory') {
+        if (parentNode && parentNode.type === "directory") {
             const newFile = {
                 name,
-                type: 'file',
+                type: "file",
                 content,
-                path: `${parentNode.path}${name}`
+                path: `${parentNode.path}${name}`,
             };
             parentNode.children.push(newFile);
             return true;

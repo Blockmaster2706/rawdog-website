@@ -2,28 +2,23 @@ import { getFileContent, processCatCommand } from "./filesystem-commands.js";
 import { updateTerminalFrame } from "./html-modify-helper.js";
 import { CustomFileSystem, CustomFileSystemNode } from "./types.js";
 
-const fileSystem = new CustomFileSystem();
+const fs = localStorage.getItem("filesystem"); // Ensure filesystem is initialized
 
-fileSystem.addDirectory("~", "documents");
-fileSystem.addDirectory("~", "downloads");
-fileSystem.addDirectory("~", "pictures");
+const fileSystemData = fs ? JSON.parse(fs) : null;
+const fileSystem: CustomFileSystem = fileSystemData
+  ? Object.assign(new CustomFileSystem(), fileSystemData)
+  : new CustomFileSystem();
 
-fileSystem.addFile(
-  "~",
-  "readme.txt",
-  "Welcome to the simulated terminal!\nUse commands like 'ls', 'cat', 'cd', and 'help' to navigate."
-);
-fileSystem.addFile(
-  "~",
-  "todo.txt",
-  "1. Learn TypeScript\n2. Build a project\n3. Explore more commands"
-);
+if (fileSystem.root.children?.length === 0) {
+  // If the filesystem is empty, initialize it with a default structure
+  fileSystem.addDirectory("/", "home");
+  fileSystem.addDirectory("/home", "user");
+  fileSystem.addFile("/home/user", "file.txt", "Hello, world!");
+}
 
-fileSystem.addFile(
-  "~/documents",
-  "project.txt",
-  "Project Ideas:\n- Build a personal website\n- Create a to-do app\n- Develop a game"
-);
+localStorage.setItem("filesystem", JSON.stringify(fileSystem));
+
+console.log("Initialized filesystem:", fileSystem);
 
 /**
  * This file provides functionality to modify the content of elements with the "commands" class
@@ -150,6 +145,13 @@ function processCommand(commandArguments: string[]): void {
         window.location.href = "./index.html";
       }, 1000);
       break;
+    case "test-reset":
+      localStorage.removeItem("filesystem");
+      updateTerminalFrame(commandArguments[0], "\nFilesystem reset.");
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+      break;
     default:
       updateTerminalFrame(
         commandArguments[0],
@@ -179,6 +181,15 @@ function processLsCommand(commandArguments: string[]): void {
     commandArguments[1] = fileSystem.currentPath; // Default to current directory
   }
 
+  if (commandArguments[1].endsWith("/")) {
+    commandArguments[1] = commandArguments[1].substring(
+      0,
+      commandArguments[1].length - 1
+    ); // Remove trailing slash
+  }
+
+  console.log("LS command path argument:", commandArguments[1]);
+
   const dirPath = commandArguments[1];
   const content = fileSystem.listDirectory(dirPath);
 
@@ -189,42 +200,6 @@ function processLsCommand(commandArguments: string[]): void {
     : `\nError: Directory '${dirPath}' not found or is not a directory.`;
 
   updateTerminalFrame(commandArguments.join(" "), contentStr);
-}
-
-function getFileSystemFromPath(path: string): any {
-  // If path is just "~", return the home directory directly
-  if (path === "~") {
-    return fileSystem.getNodeByPath("~");
-  }
-
-  if (!path.startsWith("~")) {
-    if (path.startsWith("/")) {
-      path = fileSystem.currentPath + path; // Convert absolute path to home-relative
-    } else {
-      path = fileSystem.currentPath + "/" + path; // Convert relative path to home-relative
-    }
-    console.log("Converted path:", path);
-  }
-
-  const parts = path.replace(/^~\//, "").split("/");
-  let current: any = fileSystem.getNodeByPath("~");
-
-  for (const part of parts) {
-    if (!part) continue; // Skip empty parts
-    if (!current[part]) return { "Could not find directory": true }; // Return empty object instead of null
-    current = current[part];
-
-    // If we've reached a file (string) and there are still parts to process,
-    // we should return an empty object
-    if (typeof current === "string") {
-      return { "Cant run ls on a file. Input must be a directory": true };
-    }
-  }
-
-  // If the final result is a file, return an empty object
-  return typeof current === "string"
-    ? { "Cant run ls on a file. Input must be a directory": true }
-    : current;
 }
 
 function autoCompletePath(): string {
@@ -306,43 +281,39 @@ function autoCompletePath(): string {
 function processCdCommand(commandArguments: string[]): void {
   if (!commandArguments[0]) return;
 
-  if (!commandArguments[1]) {
-    commandArguments[1] = "~"; // Default to home directory
-  }
+  let targetPath = commandArguments[1];
 
-  if (!commandArguments[1].startsWith("~")) {
-    if (commandArguments[1].startsWith("/")) {
-      commandArguments[1] = fileSystem.currentPath + commandArguments[1]; // Convert absolute path to home-relative
-    } else {
-      commandArguments[1] = fileSystem.currentPath + "/" + commandArguments[1]; // Convert relative path to home-relative
-    }
+  if (!targetPath) {
+    targetPath = "~"; // Default to home directory
   }
-
-  const targetPath = commandArguments[1];
-  const targetDir = getFileSystemFromPath(targetPath);
 
   let content = "";
-  if (getFileContent(targetPath, fileSystem) !== null) {
+  const targetDir = fileSystem.getNodeByPath(targetPath);
+  if (!(targetDir && targetDir.children)) {
+    content = `Error: Directory '${targetPath}' not found.`;
+    updateTerminalFrame(commandArguments.join(" "), content);
+    return;
+  }
+  if (targetDir && targetDir.type === "file") {
     content = `Error: '${targetPath}' is a file, not a directory.`;
     updateTerminalFrame(commandArguments.join(" "), content);
     return;
   }
-  if (Object.keys(targetDir).includes("Could not find directory")) {
-    content = `Error: Directory '${targetPath}' not found.`;
-  } else {
-    console.log(Object.keys(targetDir));
-    // Update the current directory label
-    const currentDirLabel = document.querySelector(".currentDir");
-    if (currentDirLabel) {
-      currentDirLabel.textContent = targetPath;
-    }
-    content = `Changed directory to '${targetPath}'`;
 
-    const promptLabel = document.querySelector(".prompt");
-    if (promptLabel) {
-      promptLabel.textContent = "user@machine:" + targetPath + "$";
-    }
+  let changed = targetDir.path;
+  if (targetDir.path !== "/") {
+    changed = targetDir.path.endsWith("/")
+      ? targetDir.path.substring(0, targetDir.path.length - 1)
+      : targetDir.path;
+  } else changed = "~";
+
+  fileSystem.changeDirectory(changed);
+  const currentDirLabel = document.querySelector(".prompt");
+  if (currentDirLabel) {
+    currentDirLabel.textContent = "user@machine:" + changed + "$";
   }
+  content = `Changed directory to '${changed}'`;
+  console.log("Changed directory to:", fileSystem.currentPath);
 
   updateTerminalFrame(commandArguments.join(" "), content);
 }
