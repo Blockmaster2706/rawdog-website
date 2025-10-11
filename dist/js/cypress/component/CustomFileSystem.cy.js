@@ -217,28 +217,28 @@ describe("CustomFileSystem Unit Tests", () => {
             fileSystem.root.children = children;
         });
         it("should list root directory contents", () => {
-            const contents = fileSystem.listDirectory("~/");
+            const contents = fileSystem.listDirectory("/");
             expect(contents).to.deep.equal([
-                "file1.txt",
-                "file2.txt",
-                "subdirectory",
-                "emptydir",
+                "📁 emptydir",
+                "📁 subdirectory",
+                "📄 file1.txt",
+                "📄 file2.txt",
             ]);
         });
         it("should list subdirectory contents", () => {
-            const contents = fileSystem.listDirectory("~/subdirectory");
-            expect(contents).to.deep.equal(["nested.txt"]);
+            const contents = fileSystem.listDirectory("/subdirectory");
+            expect(contents).to.deep.equal(["📄 nested.txt"]);
         });
         it("should return empty array for empty directories", () => {
-            const contents = fileSystem.listDirectory("~/emptydir");
+            const contents = fileSystem.listDirectory("/emptydir");
             expect(contents).to.deep.equal([]);
         });
         it("should return null for files", () => {
-            const contents = fileSystem.listDirectory("~/file1.txt");
+            const contents = fileSystem.listDirectory("/file1.txt");
             expect(contents).to.be.null;
         });
         it("should return null for non-existent paths", () => {
-            const contents = fileSystem.listDirectory("~/nonexistent");
+            const contents = fileSystem.listDirectory("/nonexistent");
             expect(contents).to.be.null;
         });
     });
@@ -269,23 +269,23 @@ describe("CustomFileSystem Unit Tests", () => {
         it("should change to valid directory", () => {
             const success = fileSystem.changeDirectory("~/documents");
             expect(success).to.be.true;
-            expect(fileSystem.currentPath).to.equal("~/documents");
+            expect(fileSystem.currentPath).to.equal("/documents");
         });
         it("should change to nested directory", () => {
             const success = fileSystem.changeDirectory("~/documents/projects");
             expect(success).to.be.true;
-            expect(fileSystem.currentPath).to.equal("~/documents/projects");
+            expect(fileSystem.currentPath).to.equal("/documents/projects");
         });
         it("should change to root directory", () => {
             // First change to a subdirectory
-            fileSystem.changeDirectory("~/documents");
+            fileSystem.changeDirectory("/documents");
             // Then change back to root
-            const success = fileSystem.changeDirectory("~/");
+            const success = fileSystem.changeDirectory("/");
             expect(success).to.be.true;
-            expect(fileSystem.currentPath).to.equal("~/");
+            expect(fileSystem.currentPath).to.equal("/");
         });
         it("should fail to change to file", () => {
-            const success = fileSystem.changeDirectory("~/file.txt");
+            const success = fileSystem.changeDirectory("/file.txt");
             expect(success).to.be.false;
             expect(fileSystem.currentPath).to.equal("/"); // Should remain unchanged
         });
@@ -391,12 +391,12 @@ describe("CustomFileSystem Unit Tests", () => {
                 },
             ];
             // Test navigation and file operations
-            expect(fileSystem.changeDirectory("~/home/user")).to.be.true;
-            expect(fileSystem.listDirectory("~/home/user")).to.deep.equal([
-                "documents",
+            expect(fileSystem.changeDirectory("/home/user")).to.be.true;
+            expect(fileSystem.listDirectory("/home/user")).to.deep.equal([
+                "📁 documents",
             ]);
-            expect(fileSystem.readFile("~/home/user/documents/project.txt")).to.equal("Project details");
-            expect(fileSystem.getNodeType(fileSystem.getNodeByPath("~/home/user/documents"))).to.equal("directory");
+            expect(fileSystem.readFile("/home/user/documents/project.txt")).to.equal("Project details");
+            expect(fileSystem.getNodeType(fileSystem.getNodeByPath("/home/user/documents"))).to.equal("directory");
         });
     });
 });
