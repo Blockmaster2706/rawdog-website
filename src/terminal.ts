@@ -9,11 +9,13 @@ const fileSystem: CustomFileSystem = fileSystemData
   ? Object.assign(new CustomFileSystem(), fileSystemData)
   : new CustomFileSystem();
 
-if (fileSystem.root.children?.length === 0) {
+if (!fileSystemData) {
   // If the filesystem is empty, initialize it with a default structure
-  fileSystem.addDirectory("/", "home");
-  fileSystem.addDirectory("/home", "user");
-  fileSystem.addFile("/home/user", "file.txt", "Hello, world!");
+  fileSystem.addFile(
+    "/",
+    "readme.txt",
+    "Welcome to the simulated terminal!\nType 'help' to see available commands."
+  );
 }
 
 localStorage.setItem("filesystem", JSON.stringify(fileSystem));
@@ -141,6 +143,9 @@ function processCommand(commandArguments: string[]): void {
     case "mkdir":
       processMkdirCommand(commandArguments);
       break;
+    case "rm":
+      processRmCommand(commandArguments);
+      break;
     case "exit":
       updateTerminalFrame(commandArguments[0], "\nExiting...");
       // Redirect to the home page
@@ -174,8 +179,80 @@ Available Commands:
 - cd [directory]: Change directory
 - exit: Exit the terminal
 - mkdir [directory]: Create a new directory
+- rm [file/directory]: Remove a file or directory
 `;
   updateTerminalFrame("help", content);
+}
+
+function processRmCommand(commandArguments: string[]): void {
+  if (!commandArguments[0]) return;
+
+  if (commandArguments[1] === undefined) {
+    updateTerminalFrame(
+      commandArguments[0],
+      `\nError: 'rm' requires a file or directory name.`
+    );
+    return;
+  }
+
+  let targetPath = commandArguments[1];
+
+  if (targetPath === "/" || targetPath === "~") {
+    updateTerminalFrame(
+      commandArguments.join(" "),
+      `\nError: Cannot remove the root directory.`
+    );
+    return;
+  }
+
+  if (targetPath.endsWith("/")) {
+    targetPath = targetPath.substring(0, targetPath.length - 1); // Remove trailing slash
+  }
+
+  if (!targetPath.startsWith("/")) {
+    targetPath = fileSystem.currentPath + targetPath; // Ensure absolute path
+  }
+
+  const nodeToRemove = fileSystem.getNodeByPath(targetPath);
+  if (!nodeToRemove) {
+    updateTerminalFrame(
+      commandArguments.join(" "),
+      `\nError: '${targetPath}' does not exist.`
+    );
+    return;
+  }
+
+  const parentPath = targetPath.substring(0, targetPath.lastIndexOf("/"));
+  const parentNode = fileSystem.getNodeByPath(parentPath);
+  if (!parentNode || !parentNode.children) {
+    updateTerminalFrame(
+      commandArguments.join(" "),
+      `\nError: Parent directory '${parentPath}' does not exist.`
+    );
+    return;
+  }
+
+  const index = parentNode.children.findIndex(
+    (child) => child.name === nodeToRemove.name
+  );
+  if (index === -1) {
+    updateTerminalFrame(
+      commandArguments.join(" "),
+      `\nError: Could not find '${targetPath}' in its parent directory.`
+    );
+    return;
+  }
+
+  console.log("Removing node(s): ", parentNode.children.splice(index, 1));
+  console.log("Updated parent node:", parentNode);
+  console.log("Updated filesystem:", fileSystem);
+  localStorage.setItem("filesystem", JSON.stringify(fileSystem));
+  updateTerminalFrame(
+    commandArguments.join(" "),
+    `\nRemoved '${targetPath}' successfully.`
+  );
+
+  localStorage.setItem("filesystem", JSON.stringify(fileSystem));
 }
 
 function processLsCommand(commandArguments: string[]): void {
@@ -219,7 +296,8 @@ function autoCompletePath(): string {
     input.startsWith("ls ") ||
     input.startsWith("cat ") ||
     input.startsWith("cd ") ||
-    input.startsWith("vim ")
+    input.startsWith("vim ") ||
+    input.startsWith("rm ")
   ) {
     const parts: string[] = input.split(" ");
     if (parts.length < 2) return ""; // No path to complete

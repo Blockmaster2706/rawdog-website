@@ -109,6 +109,7 @@ export class CustomFileSystem {
       parentNode.children!.push(newFile);
       return true;
     }
+    localStorage.setItem("filesystem", JSON.stringify(this));
     return false;
   }
 }
