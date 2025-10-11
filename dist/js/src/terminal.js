@@ -1,4 +1,4 @@
-import { processCatCommand } from "./filesystem-commands.js";
+import { getFileContent, processCatCommand } from "./filesystem-commands.js";
 import { updateTerminalFrame } from "./html-modify-helper.js";
 import { CustomFileSystem } from "./types.js";
 const fs = localStorage.getItem("filesystem"); // Ensure filesystem is initialized
@@ -121,6 +121,9 @@ function processCommand(commandArguments) {
             break;
         case "rm":
             processRmCommand(commandArguments);
+            break;
+        case "vim":
+            processVimCommand(commandArguments);
             break;
         case "exit":
             updateTerminalFrame(commandArguments[0], "\nExiting...");
@@ -345,5 +348,53 @@ function processCdCommand(commandArguments) {
     content = `Changed directory to '${changed}'`;
     console.log("Changed directory to:", fileSystem.currentPath);
     updateTerminalFrame(commandArguments.join(" "), content);
+}
+function processVimCommand(commandArguments) {
+    if (!commandArguments[0])
+        return;
+    if (commandArguments[1] === undefined) {
+        updateTerminalFrame(commandArguments[0], `\nError: 'vim' requires a file name.`);
+        return;
+    }
+    let targetPath = commandArguments[1];
+    if (targetPath.endsWith("/")) {
+        targetPath = targetPath.substring(0, targetPath.length - 1); // Remove trailing slash
+    }
+    if (!targetPath.startsWith("/")) {
+        targetPath = fileSystem.currentPath + targetPath; // Ensure absolute path
+    }
+    const fileNode = fileSystem.getNodeByPath(targetPath);
+    if (fileNode && fileNode.type === "directory") {
+        updateTerminalFrame(commandArguments.join(" "), `\nError: '${targetPath}' is a directory, not a file.`);
+        return;
+    }
+    let fileContent = getFileContent(targetPath, fileSystem);
+    if (fileContent === null) {
+        // If file doesn't exist, create it
+        const parentPath = targetPath.substring(0, targetPath.lastIndexOf("/"));
+        const fileName = targetPath.substring(targetPath.lastIndexOf("/") + 1);
+        if (!fileSystem.addFile(parentPath || "/", fileName, "")) {
+            updateTerminalFrame(commandArguments.join(" "), `\nError: Could not create file '${targetPath}'.`);
+            return;
+        }
+        fileContent = "";
+    }
+    // Open a simple prompt to edit the file content
+    const newContent = prompt(`Editing ${targetPath}:`, fileContent);
+    if (newContent !== null) {
+        // Update the file content in the filesystem
+        const fileNode = fileSystem.getNodeByPath(targetPath);
+        if (fileNode && fileNode.type === "file") {
+            fileNode.content = newContent;
+            localStorage.setItem("filesystem", JSON.stringify(fileSystem));
+            updateTerminalFrame(commandArguments.join(" "), `\nUpdated content of '${targetPath}'.`);
+        }
+        else {
+            updateTerminalFrame(commandArguments.join(" "), `\nError: '${targetPath}' is not a valid file.`);
+        }
+    }
+    else {
+        updateTerminalFrame(commandArguments.join(" "), `\nEdit cancelled for '${targetPath}'.`);
+    }
 }
 //# sourceMappingURL=terminal.js.map
