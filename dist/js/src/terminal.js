@@ -34,7 +34,7 @@ function updateCommandsLabel() {
         switch (prevCommand.textContent) {
             case "":
                 commandElement.textContent =
-                    "Available Commands: help, ls, cat, cd, exit, mkdir";
+                    "Available Commands: help, ls, cat, cd, exit, mkdir, rm, vim";
                 return false;
             default:
                 commandElement.textContent = prevCommand.textContent;
@@ -155,6 +155,7 @@ Available Commands:
 - exit: Exit the terminal
 - mkdir [directory]: Create a new directory
 - rm [file/directory]: Remove a file or directory
+- vim [filename]: Edit or create a file
 `;
     updateTerminalFrame("help", content);
 }
