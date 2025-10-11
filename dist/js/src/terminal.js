@@ -1,3 +1,4 @@
+import { documentationContent } from "./documentation.js";
 import { getFileContent, processCatCommand } from "./filesystem-commands.js";
 import { updateTerminalFrame } from "./html-modify-helper.js";
 import { CustomFileSystem } from "./types.js";
@@ -9,6 +10,7 @@ const fileSystem = fileSystemData
 if (!fileSystemData) {
     // If the filesystem is empty, initialize it with a default structure
     fileSystem.addFile("/", "readme.txt", "Welcome to the simulated terminal!\nType 'help' to see available commands.");
+    fileSystem.addFile("/", "documentation.txt", documentationContent);
 }
 localStorage.setItem("filesystem", JSON.stringify(fileSystem));
 console.log("Initialized filesystem:", fileSystem);

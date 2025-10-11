@@ -1,12 +1,12 @@
 describe("Basic E2E Tests for localhost:5500", () => {
   beforeEach(() => {
     // Visit your localhost application before each test
-    cy.visit("http://localhost:5500/dist/terminal.html");
+    cy.visit("http://localhost:5500/dist/index.html");
   });
 
   it("should load the terminal page successfully", () => {
     // Check that the page loads without errors
-    cy.url().should("include", "localhost:5500/dist/terminal.html");
+    cy.url().should("include", "localhost:5500/dist/index.html");
   });
 
   it("should have basic page structure", () => {

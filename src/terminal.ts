@@ -1,3 +1,4 @@
+import { documentationContent } from "./documentation.js";
 import { getFileContent, processCatCommand } from "./filesystem-commands.js";
 import { updateTerminalFrame } from "./html-modify-helper.js";
 import { CustomFileSystem, CustomFileSystemNode } from "./types.js";
@@ -16,6 +17,7 @@ if (!fileSystemData) {
     "readme.txt",
     "Welcome to the simulated terminal!\nType 'help' to see available commands."
   );
+  fileSystem.addFile("/", "documentation.txt", documentationContent);
 }
 
 localStorage.setItem("filesystem", JSON.stringify(fileSystem));
