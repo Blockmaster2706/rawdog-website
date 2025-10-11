@@ -207,34 +207,39 @@ function autoCompletePath() {
     }
     const parts = input.split("/");
     let current = fileSystem.getNodeByPath(fileSystem.currentPath);
-    if (current === null)
-        return "";
-    if (!current.children)
-        return "";
+    if (!current || !current.children)
+        return ""; // Skip empty parts or if current is null
     let pathSoFar = fileSystem.currentPath;
     // For all parts except the last one, require exact matches
     for (let i = 0; i < parts.length - 1; i++) {
         console.log("Processing part for auto-completion:", parts[i]);
-        console.log("Current directory children:", current.children);
+        console.log("Current directory children:", current?.children);
         const part = parts[i];
-        if (!part)
-            continue; // Skip empty parts
-        const child = current.children.find((child) => child.path === `${pathSoFar}/${part}`);
-        if (!child)
+        if (!part || !current || !current.children)
+            continue; // Skip empty parts or if current is null
+        const child_path = current.children.find((child) => child.path === `${pathSoFar}/${part}`);
+        if (!child_path)
             return ""; // Return empty string if not found
-        current = child;
+        current = child_path;
         pathSoFar += part + "/";
     }
     // For the last part, check for partial matches
     const lastPart = parts[parts.length - 1];
     if (lastPart) {
+        if (!current || !current.children)
+            return ""; // If current is null or has no children, return empty string
         console.log("Last part for auto-completion:", lastPart);
-        console.log("Current directory children:", current.children.map(child => child.name));
-        const matches = current.children.map(child => child.name).filter((key) => key.startsWith(lastPart));
+        console.log("Current directory children:", current.children.map((child) => child.name));
+        const matches = current.children
+            .map((child) => child.name)
+            .filter((key) => key.startsWith(lastPart));
         // If exactly one match, use it for autocompletion
         if (matches.length === 1) {
             const command = inputElement.value.split(" ")[0] || "";
-            const conditionalSlash = current?.children?.find(child => child.name === matches[0])?.type === "directory" ? "/" : "";
+            const conditionalSlash = current?.children?.find((child) => child.name === matches[0])?.type ===
+                "directory"
+                ? "/"
+                : "";
             console.log("Conditional slash:", conditionalSlash);
             return command
                 ? `${command} ${pathSoFar}${matches[0]}${conditionalSlash}`
