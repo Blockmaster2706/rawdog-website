@@ -27,7 +27,7 @@ describe("Basic E2E Tests for localhost:5500", () => {
     it("should allow path completion with Tab key", () => {
         const partialCommand = "cd doc";
         cy.get(".command-input").type(partialCommand);
-        cy.get(".command-input").type("{tab}");
+        cy.get(".command-input").press(Cypress.Keyboard.Keys.TAB);
         cy.get(".command-input").should("have.value", "cd /documents/"); // Adjust based on your actual directory structure
     });
     it("should execute command on Enter key press", () => {
