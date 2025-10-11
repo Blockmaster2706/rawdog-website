@@ -70,6 +70,29 @@ setTimeout(() => {
  * Handles keyboard input for command execution
  */
 document.addEventListener("keydown", (event) => {
+  const activeElement = document.activeElement;
+
+  switch (activeElement?.className) {
+    case "command-input":
+      // If the active element is the command input, do nothing here
+      break;
+    case "file-input":
+      // If the active element is the file input, do nothing here
+      break;
+    case "editor-command-input":
+      // If the active element is the editor command input, do nothing here
+      break;
+    default:
+      // If no input is focused, focus the command input
+      const commandInput = document.querySelector(
+        ".command-input"
+      ) as HTMLInputElement;
+      if (commandInput) {
+        commandInput.focus();
+      }
+      break;
+  }
+
   // Check if the pressed key is Enter
   if (event.key === "Enter") {
     console.log("Enter key pressed");
