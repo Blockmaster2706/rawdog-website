@@ -36,7 +36,7 @@ function updateCommandsLabel() {
         switch (prevCommand.textContent) {
             case "":
                 commandElement.textContent =
-                    "Available Commands: help, ls, cat, cd, exit";
+                    "Available Commands: help, ls, cat, cd, exit, mkdir";
                 return false;
             default:
                 commandElement.textContent = prevCommand.textContent;
@@ -118,6 +118,9 @@ function processCommand(commandArguments) {
         case "cd":
             processCdCommand(commandArguments);
             break;
+        case "mkdir":
+            processMkdirCommand(commandArguments);
+            break;
         case "exit":
             updateTerminalFrame(commandArguments[0], "\nExiting...");
             // Redirect to the home page
@@ -146,6 +149,7 @@ Available Commands:
 - cat [filename]: Display file content
 - cd [directory]: Change directory
 - exit: Exit the terminal
+- mkdir [directory]: Create a new directory
 `;
     updateTerminalFrame("help", content);
 }
@@ -232,6 +236,35 @@ function autoCompletePath() {
     }
     console.log("Auto-completed path:", pathSoFar);
     return "";
+}
+function processMkdirCommand(commandArguments) {
+    if (!commandArguments[0])
+        return;
+    if (commandArguments[1] === undefined) {
+        updateTerminalFrame(commandArguments[0], `\nError: 'mkdir' requires a directory name.`);
+        return;
+    }
+    let targetPath = commandArguments[1];
+    if (targetPath.endsWith("/")) {
+        targetPath = targetPath.substring(0, targetPath.length - 1); // Remove trailing slash
+    }
+    if (!targetPath.startsWith("/")) {
+        targetPath = fileSystem.currentPath + targetPath; // Ensure absolute path
+    }
+    const dirPath = targetPath;
+    const parentPath = dirPath.substring(0, dirPath.lastIndexOf("/"));
+    if (parentPath && !fileSystem.getNodeByPath(parentPath)) {
+        updateTerminalFrame(commandArguments.join(" "), `\nError: Parent directory '${parentPath}' does not exist.`);
+        return;
+    }
+    const dirName = dirPath.substring(dirPath.lastIndexOf("/") + 1);
+    if (fileSystem.addDirectory(parentPath || "/", dirName)) {
+        localStorage.setItem("filesystem", JSON.stringify(fileSystem));
+        updateTerminalFrame(commandArguments.join(" "), `\nCreated directory '${dirPath}'`);
+    }
+    else {
+        updateTerminalFrame(commandArguments.join(" "), `\nError: Could not create directory '${dirPath}'`);
+    }
 }
 function processCdCommand(commandArguments) {
     if (!commandArguments[0])
