@@ -26,6 +26,15 @@
       <input class="command-input" type="text" />
     </div>
   </div>
-  <label class="currentDir">~</label>
+  <div class="file-editor hidden">
+    <div class="editor-content">
+      <div>Editing <span class="currentFile"></span></div>
+      <div class="editor-toolbar"></div>
+      <textarea class="file-input"></textarea>
+      <label class="editor-command-input hidden">:wq</label>
+    </div>
+  </div>
+  <label class="currentDir hidden">~</label>
+  <label class="currentlyEditing hidden">false</label>
   <!-- Page Specific Content -->
 </body>

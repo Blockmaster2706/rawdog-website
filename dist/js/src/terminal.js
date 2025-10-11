@@ -96,6 +96,114 @@ document.addEventListener("keydown", (event) => {
         }
     }
 });
+const editorInputLabel = document.querySelector(".file-input");
+editorInputLabel?.addEventListener("keydown", (e) => {
+    const keyEvent = e;
+    if (keyEvent.key === ":") {
+        console.log("Colon key pressed in editor");
+        e.preventDefault(); // Prevent the default behavior
+        const inputElement = document.querySelector(".editor-command-input");
+        console.log("Editor input element:", inputElement);
+        if (inputElement) {
+            inputElement.textContent = ":";
+            inputElement.classList.remove("hidden");
+            inputElement.setAttribute("tabindex", "0");
+            inputElement.focus();
+        }
+    }
+});
+const editorCommandInput = document.querySelector(".editor-command-input");
+editorCommandInput.addEventListener("blur", (e) => {
+    const inputElement = e.target;
+    if (inputElement) {
+        inputElement.textContent = "";
+        inputElement.classList.add("hidden");
+    }
+});
+editorCommandInput.addEventListener("keydown", (e) => {
+    const keyEvent = e;
+    switch (keyEvent.key) {
+        case "w":
+            console.log("W pressed in editor command input");
+            if (editorCommandInput.textContent === ":") {
+                editorCommandInput.textContent = ":w";
+            }
+            else if (editorCommandInput.textContent === ":q") {
+                editorCommandInput.textContent = ":qw";
+            }
+            break;
+        case "q":
+            console.log("Q pressed in editor command input");
+            if (editorCommandInput.textContent === ":") {
+                editorCommandInput.textContent = ":q";
+            }
+            else if (editorCommandInput.textContent === ":w") {
+                editorCommandInput.textContent = ":wq";
+            }
+            break;
+        case "Enter":
+            const fileInput = document.querySelector(".file-input");
+            if (editorCommandInput.textContent.includes("w")) {
+                console.log("W command entered");
+                const currentFileLabel = document.querySelector(".currentFile");
+                if (fileInput && currentFileLabel) {
+                    const currentFilePath = currentFileLabel.textContent || "";
+                    const fileNode = fileSystem.getNodeByPath(currentFilePath);
+                    if (fileNode && fileNode.type === "file") {
+                        fileNode.content = fileInput.value;
+                        localStorage.setItem("filesystem", JSON.stringify(fileSystem));
+                        updateTerminalFrame("vim", `\nSaved changes to '${currentFilePath}'.`);
+                    }
+                    else {
+                        updateTerminalFrame("vim", `\nError: '${currentFilePath}' is not a valid file.`);
+                    }
+                }
+            }
+            if (editorCommandInput.textContent.includes("q")) {
+                console.log("Q command entered");
+                const currentFileLabel = document.querySelector(".currentFile");
+                // Close the editor
+                const editorElement = document.querySelector(".file-editor");
+                if (editorElement) {
+                    editorElement.classList.add("hidden");
+                }
+                // Clear the file input
+                if (fileInput) {
+                    fileInput.value = "";
+                }
+                // Clear the current file label
+                if (currentFileLabel) {
+                    currentFileLabel.textContent = "";
+                }
+                const commandInput = document.querySelector(".command-input");
+                if (commandInput) {
+                    commandInput.focus();
+                }
+            }
+            fileInput.focus();
+            e.preventDefault(); // Prevent the default behavior
+            break;
+        case "Backspace":
+            if (keyEvent.key === "Backspace") {
+                if (editorCommandInput.textContent) {
+                    editorCommandInput.textContent = editorCommandInput.textContent.slice(0, -1);
+                }
+                if (editorCommandInput.textContent === "") {
+                    editorCommandInput.textContent = ":";
+                }
+            }
+            break;
+        case "Escape":
+            console.log("Escape key pressed in editor command input");
+            e.preventDefault(); // Prevent the default behavior
+            const inputElement = e.target;
+            if (inputElement) {
+                // Close the command input
+                inputElement.value = "";
+                inputElement.classList.add("hidden");
+            }
+    }
+});
 /**
  * Processes commands entered by the user
  * @param command The command to process
@@ -353,6 +461,11 @@ function processCdCommand(commandArguments) {
 function processVimCommand(commandArguments) {
     if (!commandArguments[0])
         return;
+    const editorElement = document.querySelector(".file-editor");
+    if (editorElement && !editorElement.classList.contains("hidden")) {
+        updateTerminalFrame(commandArguments.join(" "), `\nError: There is already a file open in the editor. Please close it before changing directories.`);
+        return;
+    }
     if (commandArguments[1] === undefined) {
         updateTerminalFrame(commandArguments[0], `\nError: 'vim' requires a file name.`);
         return;
@@ -380,22 +493,17 @@ function processVimCommand(commandArguments) {
         }
         fileContent = "";
     }
-    // Open a simple prompt to edit the file content
-    const newContent = prompt(`Editing ${targetPath}:`, fileContent);
-    if (newContent !== null) {
-        // Update the file content in the filesystem
-        const fileNode = fileSystem.getNodeByPath(targetPath);
-        if (fileNode && fileNode.type === "file") {
-            fileNode.content = newContent;
-            localStorage.setItem("filesystem", JSON.stringify(fileSystem));
-            updateTerminalFrame(commandArguments.join(" "), `\nUpdated content of '${targetPath}'.`);
-        }
-        else {
-            updateTerminalFrame(commandArguments.join(" "), `\nError: '${targetPath}' is not a valid file.`);
-        }
+    const fileInput = document.querySelector(".file-input");
+    const currentFileLabel = document.querySelector(".currentFile");
+    if (editorElement && fileInput && currentFileLabel) {
+        editorElement.classList.remove("hidden");
+        fileInput.value = fileContent;
+        currentFileLabel.textContent = targetPath;
+        fileInput.focus();
     }
     else {
-        updateTerminalFrame(commandArguments.join(" "), `\nEdit cancelled for '${targetPath}'.`);
+        updateTerminalFrame(commandArguments.join(" "), `\nEdit failed for '${targetPath}'.`);
     }
+    updateTerminalFrame(commandArguments.join(" "), "");
 }
 //# sourceMappingURL=terminal.js.map
