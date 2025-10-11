@@ -182,18 +182,37 @@ editorCommandInput.addEventListener("keydown", (e: Event) => {
         ) as HTMLLabelElement;
         if (fileInput && currentFileLabel) {
           const currentFilePath = currentFileLabel.textContent || "";
+          let fileContent = getFileContent(currentFilePath, fileSystem);
+          if (fileContent === null) {
+            // If file doesn't exist, create it
+            const parentPath = currentFilePath.substring(
+              0,
+              currentFilePath.lastIndexOf("/")
+            );
+            const fileName = currentFilePath.substring(
+              currentFilePath.lastIndexOf("/") + 1
+            );
+            if (!fileSystem.addFile(parentPath || "/", fileName, "")) {
+              updateTerminalFrame(
+                `vim ${currentFilePath}`,
+                `Error: Could not create file '${currentFilePath}'.`
+              );
+              return;
+            }
+            fileContent = "";
+          }
           const fileNode = fileSystem.getNodeByPath(currentFilePath);
           if (fileNode && fileNode.type === "file") {
             fileNode.content = fileInput.value;
             localStorage.setItem("filesystem", JSON.stringify(fileSystem));
             updateTerminalFrame(
-              "vim",
-              `\nSaved changes to '${currentFilePath}'.`
+              `vim ${currentFilePath}`,
+              `Saved changes to '${currentFilePath}'.`
             );
           } else {
             updateTerminalFrame(
-              "vim",
-              `\nError: '${currentFilePath}' is not a valid file.`
+              `vim ${currentFilePath}`,
+              `Error: '${currentFilePath}' is not a valid file.`
             );
           }
         }
@@ -282,7 +301,7 @@ function processCommand(commandArguments: string[]): void {
       processVimCommand(commandArguments);
       break;
     case "exit":
-      updateTerminalFrame(commandArguments[0], "\nExiting...");
+      updateTerminalFrame(commandArguments[0], "Exiting...");
       // Redirect to the home page
       setTimeout(() => {
         window.location.href = "./index.html";
@@ -290,7 +309,7 @@ function processCommand(commandArguments: string[]): void {
       break;
     case "test-reset":
       localStorage.removeItem("filesystem");
-      updateTerminalFrame(commandArguments[0], "\nFilesystem reset.");
+      updateTerminalFrame(commandArguments[0], "Filesystem reset.");
       setTimeout(() => {
         window.location.reload();
       }, 1000);
@@ -298,7 +317,7 @@ function processCommand(commandArguments: string[]): void {
     default:
       updateTerminalFrame(
         commandArguments[0],
-        `\nUnknown command: ${commandArguments[0]}`
+        `Unknown command: ${commandArguments[0]}`
       );
       break;
   }
@@ -326,7 +345,7 @@ function processRmCommand(commandArguments: string[]): void {
   if (commandArguments[1] === undefined) {
     updateTerminalFrame(
       commandArguments[0],
-      `\nError: 'rm' requires a file or directory name.`
+      `Error: 'rm' requires a file or directory name.`
     );
     return;
   }
@@ -336,7 +355,7 @@ function processRmCommand(commandArguments: string[]): void {
   if (targetPath === "/" || targetPath === "~") {
     updateTerminalFrame(
       commandArguments.join(" "),
-      `\nError: Cannot remove the root directory.`
+      `Error: Cannot remove the root directory.`
     );
     return;
   }
@@ -353,7 +372,7 @@ function processRmCommand(commandArguments: string[]): void {
   if (!nodeToRemove) {
     updateTerminalFrame(
       commandArguments.join(" "),
-      `\nError: '${targetPath}' does not exist.`
+      `Error: '${targetPath}' does not exist.`
     );
     return;
   }
@@ -363,7 +382,7 @@ function processRmCommand(commandArguments: string[]): void {
   if (!parentNode || !parentNode.children) {
     updateTerminalFrame(
       commandArguments.join(" "),
-      `\nError: Parent directory '${parentPath}' does not exist.`
+      `Error: Parent directory '${parentPath}' does not exist.`
     );
     return;
   }
@@ -374,7 +393,7 @@ function processRmCommand(commandArguments: string[]): void {
   if (index === -1) {
     updateTerminalFrame(
       commandArguments.join(" "),
-      `\nError: Could not find '${targetPath}' in its parent directory.`
+      `Error: Could not find '${targetPath}' in its parent directory.`
     );
     return;
   }
@@ -385,7 +404,7 @@ function processRmCommand(commandArguments: string[]): void {
   localStorage.setItem("filesystem", JSON.stringify(fileSystem));
   updateTerminalFrame(
     commandArguments.join(" "),
-    `\nRemoved '${targetPath}' successfully.`
+    `Removed '${targetPath}' successfully.`
   );
 
   localStorage.setItem("filesystem", JSON.stringify(fileSystem));
@@ -413,8 +432,8 @@ function processLsCommand(commandArguments: string[]): void {
   console.log("LS content:", content);
 
   const contentStr = content
-    ? `\n${content.join("\n")}`
-    : `\nError: Directory '${dirPath}' not found or is not a directory.`;
+    ? `${content.join("\n")}`
+    : `Error: Directory '${dirPath}' not found or is not a directory.`;
 
   updateTerminalFrame(commandArguments.join(" "), contentStr);
 }
@@ -502,7 +521,7 @@ function processMkdirCommand(commandArguments: string[]): void {
   if (commandArguments[1] === undefined) {
     updateTerminalFrame(
       commandArguments[0],
-      `\nError: 'mkdir' requires a directory name.`
+      `Error: 'mkdir' requires a directory name.`
     );
     return;
   }
@@ -523,7 +542,7 @@ function processMkdirCommand(commandArguments: string[]): void {
   if (parentPath && !fileSystem.getNodeByPath(parentPath)) {
     updateTerminalFrame(
       commandArguments.join(" "),
-      `\nError: Parent directory '${parentPath}' does not exist.`
+      `Error: Parent directory '${parentPath}' does not exist.`
     );
     return;
   }
@@ -534,12 +553,12 @@ function processMkdirCommand(commandArguments: string[]): void {
     localStorage.setItem("filesystem", JSON.stringify(fileSystem));
     updateTerminalFrame(
       commandArguments.join(" "),
-      `\nCreated directory '${dirPath}'`
+      `Created directory '${dirPath}'`
     );
   } else {
     updateTerminalFrame(
       commandArguments.join(" "),
-      `\nError: Could not create directory '${dirPath}'`
+      `Error: Could not create directory '${dirPath}'`
     );
   }
 }
@@ -593,7 +612,7 @@ function processVimCommand(commandArguments: string[]): void {
   if (editorElement && !editorElement.classList.contains("hidden")) {
     updateTerminalFrame(
       commandArguments.join(" "),
-      `\nError: There is already a file open in the editor. Please close it before changing directories.`
+      `Error: There is already a file open in the editor. Please close it before changing directories.`
     );
     return;
   }
@@ -601,7 +620,7 @@ function processVimCommand(commandArguments: string[]): void {
   if (commandArguments[1] === undefined) {
     updateTerminalFrame(
       commandArguments[0],
-      `\nError: 'vim' requires a file name.`
+      `Error: 'vim' requires a file name.`
     );
     return;
   }
@@ -620,26 +639,12 @@ function processVimCommand(commandArguments: string[]): void {
   if (fileNode && fileNode.type === "directory") {
     updateTerminalFrame(
       commandArguments.join(" "),
-      `\nError: '${targetPath}' is a directory, not a file.`
+      `Error: '${targetPath}' is a directory, not a file.`
     );
     return;
   }
 
   let fileContent = getFileContent(targetPath, fileSystem);
-
-  if (fileContent === null) {
-    // If file doesn't exist, create it
-    const parentPath = targetPath.substring(0, targetPath.lastIndexOf("/"));
-    const fileName = targetPath.substring(targetPath.lastIndexOf("/") + 1);
-    if (!fileSystem.addFile(parentPath || "/", fileName, "")) {
-      updateTerminalFrame(
-        commandArguments.join(" "),
-        `\nError: Could not create file '${targetPath}'.`
-      );
-      return;
-    }
-    fileContent = "";
-  }
 
   const fileInput = document.querySelector(
     ".file-input"
@@ -649,13 +654,13 @@ function processVimCommand(commandArguments: string[]): void {
   ) as HTMLLabelElement;
   if (editorElement && fileInput && currentFileLabel) {
     editorElement.classList.remove("hidden");
-    fileInput.value = fileContent;
+    fileInput.value = fileContent || "";
     currentFileLabel.textContent = targetPath;
     fileInput.focus();
   } else {
     updateTerminalFrame(
       commandArguments.join(" "),
-      `\nEdit failed for '${targetPath}'.`
+      `Edit failed for '${targetPath}'.`
     );
   }
 
