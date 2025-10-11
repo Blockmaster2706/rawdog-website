@@ -1,17 +1,12 @@
-import { updateTerminalFrame } from "./html-modify-helper";
-import { CustomFileSystem } from "./types";
+import { updateTerminalFrame } from "./html-modify-helper.js";
+import { CustomFileSystem, CustomFileSystemNode } from "./types.js";
 
 // Function to get file content based on path
 export function getFileContent(path: string, files: CustomFileSystem): string | null {
   const parts = path.replace(/^~\//, "").split("/");
-  let current: any = fileSystem["~"];
+  let current: CustomFileSystemNode | null = files.getNodeByPath(files.currentPath + path);
 
-  for (const part of parts) {
-    if (!current[part]) return null;
-    current = current[part];
-  }
-
-  return typeof current === "string" ? current : null;
+  return current?.type === "file" ? current.content || null : null;
 }
 
 export function processCatCommand(commandArguments: string[], files: CustomFileSystem): void {
@@ -29,14 +24,13 @@ export function processCatCommand(commandArguments: string[], files: CustomFileS
 
   if (!filename.startsWith("~")) {
     if (filename.startsWith("/")) {
-      filename = getCurrentDirectory() + filename; // Convert absolute path to home-relative
-    } else {
-      filename = getCurrentDirectory() + "/" + filename; // Convert relative path to home-relative
-    }
+      filename = files.currentPath + filename.substring(1); // Convert absolute path to home-relative
+    } 
+    filename = files.currentPath + filename; // Convert relative path to home-relative
   }
 
   // Look up the file in our file system
-  const fileContent = getFileContent(filename);
+  const fileContent = getFileContent(filename, files);
   if (fileContent !== null) {
     content = `\n${fileContent}`;
   } else {

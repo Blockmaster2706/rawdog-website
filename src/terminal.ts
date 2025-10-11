@@ -1,7 +1,21 @@
-import { getFileContent } from "./filesystem-commands";
-import { CustomFileSystem } from "./types";
+import { getFileContent, processCatCommand } from "./filesystem-commands.js";
+import { updateTerminalFrame } from "./html-modify-helper.js";
+import { CustomFileSystem } from "./types.js";
 
 const fileSystem = new CustomFileSystem();
+
+fileSystem.addDirectory("~", "documents");
+fileSystem.addDirectory("~", "downloads");
+fileSystem.addDirectory("~", "pictures");
+
+fileSystem.addFile("~", "readme.txt", "Welcome to the simulated terminal!\nUse commands like 'ls', 'cat', 'cd', and 'help' to navigate.");
+fileSystem.addFile("~", "todo.txt", "1. Learn TypeScript\n2. Build a project\n3. Explore more commands");
+
+fileSystem.addFile(
+  "~/documents",
+  "project.txt",
+  "Project Ideas:\n- Build a personal website\n- Create a to-do app\n- Develop a game"
+);
 
 /**
  * This file provides functionality to modify the content of elements with the "commands" class
@@ -116,7 +130,7 @@ function processCommand(commandArguments: string[]): void {
       processLsCommand(commandArguments);
       break;
     case "cat":
-      processCatCommand(commandArguments);
+      processCatCommand(commandArguments, fileSystem);
       break;
     case "cd":
       processCdCommand(commandArguments);
@@ -154,52 +168,38 @@ function processLsCommand(commandArguments: string[]): void {
   if (!commandArguments[0]) return;
 
   if (!commandArguments[1]) {
-    commandArguments[1] = getCurrentDirectory(); // Default to current directory
+    commandArguments[1] = fileSystem.currentPath; // Default to current directory
   }
 
   const dirPath = commandArguments[1];
-  const directory = getFileSystemFromPath(dirPath);
+  const content = fileSystem.listDirectory(dirPath);
 
-  let files = "";
-  if (typeof directory === "object" && !directory["Could not find directory"]) {
-    // Process each item in the directory
-    files = Object.entries(directory)
-      .map(([name, content]) => {
-        // Check if it's a directory or a file
-        const prefix =
-          typeof content === "object" ? "dir&nbsp;&nbsp;" : "file ";
-        return prefix + name;
-      })
-      .join("\n");
-  } else if (directory["Could not find directory"]) {
-    files = `Error: Directory '${dirPath}' not found.`;
-  } else if (directory["Cant run ls on a file. Input must be a directory"]) {
-    files = `Error: '${dirPath}' is a file, not a directory.`;
-  } else {
-    files = "Empty directory";
-  }
+  console.log("LS content:", content);
 
-  const content = `${files}`;
-  updateTerminalFrame(commandArguments.join(" "), content);
+  const contentStr = content
+    ? `\n${content.join("\n")}`
+    : `\nError: Directory '${dirPath}' not found or is not a directory.`;
+
+  updateTerminalFrame(commandArguments.join(" "), contentStr);
 }
 
 function getFileSystemFromPath(path: string): any {
   // If path is just "~", return the home directory directly
   if (path === "~") {
-    return fileSystem["~"];
+    return fileSystem.getNodeByPath("~");
   }
 
   if (!path.startsWith("~")) {
     if (path.startsWith("/")) {
-      path = getCurrentDirectory() + path; // Convert absolute path to home-relative
+      path = fileSystem.currentPath + path; // Convert absolute path to home-relative
     } else {
-      path = getCurrentDirectory() + "/" + path; // Convert relative path to home-relative
+      path = fileSystem.currentPath + "/" + path; // Convert relative path to home-relative
     }
     console.log("Converted path:", path);
   }
 
   const parts = path.replace(/^~\//, "").split("/");
-  let current: any = fileSystem["~"];
+  let current: any = fileSystem.getNodeByPath("~");
 
   for (const part of parts) {
     if (!part) continue; // Skip empty parts
@@ -231,7 +231,8 @@ function autoCompletePath(): string {
   if (
     input.startsWith("ls ") ||
     input.startsWith("cat ") ||
-    input.startsWith("cd ")
+    input.startsWith("cd ") ||
+    input.startsWith("vim ")
   ) {
     const parts: string[] = input.split(" ");
     if (parts.length < 2) return ""; // No path to complete
@@ -244,31 +245,40 @@ function autoCompletePath(): string {
     input = input.slice(2); // Remove leading '~/'
   }
   const parts = input.split("/");
-  let current: any = fileSystem["~"];
-  let pathSoFar = "~";
+  let current = fileSystem.getNodeByPath(fileSystem.currentPath);
+  if (current === null) return "";
+  if (!current.children) return "";
+  let pathSoFar = fileSystem.currentPath;
 
   // For all parts except the last one, require exact matches
   for (let i = 0; i < parts.length - 1; i++) {
+    console.log("Processing part for auto-completion:", parts[i]);
+    console.log("Current directory children:", current.children);
     const part = parts[i];
     if (!part) continue; // Skip empty parts
-    if (!current[part]) return ""; // Return empty string if not found
-    current = current[part];
-    pathSoFar += "/" + part;
+    const child = current.children.find((child) => child.path === `${pathSoFar}/${part}`);
+    if (!child) return ""; // Return empty string if not found
+    current = child;
+    pathSoFar += part + "/";
   }
 
   // For the last part, check for partial matches
   const lastPart = parts[parts.length - 1];
   if (lastPart) {
-    const matches = Object.keys(current).filter((key) =>
+    console.log("Last part for auto-completion:", lastPart);
+    console.log("Current directory children:", current.children.map(child => child.name));
+    const matches = current.children.map(child => child.name).filter((key) =>
       key.startsWith(lastPart)
     );
 
     // If exactly one match, use it for autocompletion
     if (matches.length === 1) {
       const command = inputElement.value.split(" ")[0] || "";
+      const conditionalSlash = current?.children?.find(child => child.name === matches[0])?.type === "directory" ? "/" : "";
+      console.log("Conditional slash:", conditionalSlash);
       return command
-        ? `${command} ${pathSoFar}/${matches[0]}`
-        : `${pathSoFar}/${matches[0]}`;
+        ? `${command} ${pathSoFar}${matches[0]}${conditionalSlash}`
+        : `${pathSoFar}${matches[0]}${conditionalSlash}`;
     }
   }
 
@@ -285,9 +295,9 @@ function processCdCommand(commandArguments: string[]): void {
 
   if (!commandArguments[1].startsWith("~")) {
     if (commandArguments[1].startsWith("/")) {
-      commandArguments[1] = getCurrentDirectory() + commandArguments[1]; // Convert absolute path to home-relative
+      commandArguments[1] = fileSystem.currentPath + commandArguments[1]; // Convert absolute path to home-relative
     } else {
-      commandArguments[1] = getCurrentDirectory() + "/" + commandArguments[1]; // Convert relative path to home-relative
+      commandArguments[1] = fileSystem.currentPath + "/" + commandArguments[1]; // Convert relative path to home-relative
     }
   }
 
@@ -295,7 +305,7 @@ function processCdCommand(commandArguments: string[]): void {
   const targetDir = getFileSystemFromPath(targetPath);
 
   let content = "";
-  if (getFileContent(targetPath) !== null) {
+  if (getFileContent(targetPath, fileSystem) !== null) {
     content = `Error: '${targetPath}' is a file, not a directory.`;
     updateTerminalFrame(commandArguments.join(" "), content);
     return;
