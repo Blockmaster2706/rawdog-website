@@ -1,7 +1,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Working Title</title>
+  <title>Terminal Simulator</title>
   <link
     href="https://fonts.googleapis.com/css2?family=Victor+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet"
@@ -9,16 +9,23 @@
   <link href="./output.css" rel="stylesheet" />
 </head>
 <body class="">
-  <script type="module" src="./js/index.js"></script>
   <div class="navbar">
-    <a href="#">Home</a>
-    <a href="./terminal.html">Terminal</a>
-    <a href="#">Contact</a>
+    <label>Terminal Simulator</label>
   </div>
   <!-- Page Specific Content -->
-  <script type="module" src="./js/index.js"></script>
-  <div class="">
-    <p class="">Hello world</p>
+  <script type="module" src="./js/src/terminal.js"></script>
+  <p>> /bin/bash</p>
+  <div class="terminal-frame">
+    <p class="current-command"></p>
+    <p class="terminal-output">
+      Welcome to the terminal. Type 'help' for a list of commands.
+    </p>
+    <div class="input-line">
+      <label class="commands">Available Commands: </label>
+      <label class="prompt">user@machine:~$</label>
+      <input class="command-input" type="text" />
+    </div>
   </div>
+  <label class="currentDir">~</label>
   <!-- Page Specific Content -->
 </body>
